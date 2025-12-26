@@ -2,10 +2,84 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>TOUCH MOUSE</title>
     <meta name="description" content="form para ingresar el codigo desde el celular" />
     <link rel="stylesheet" href="client.css">
+    <style>
+        #control-ui {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: row; /* Cambiado a row para izq/der */
+            justify-content: space-between; /* Espacio entre joystick y botón */
+            align-items: center;
+            padding: 0 10%; /* Margen lateral */
+            z-index: 1500;
+            pointer-events: none; /* Dejar pasar eventos al fondo si es necesario, pero los hijos tendrán auto */
+            touch-action: none;
+        }
+
+        #joystick {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            position: relative;
+            touch-action: none;
+            pointer-events: auto;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        #stick {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.4);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        #clickBtn {
+            width: 120px;
+            height: 120px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 50%; /* Botón circular para mejor ergonomía */
+            background: #0a84ff;
+            color: white;
+            border: none;
+            pointer-events: auto;
+            box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #clickBtn:active {
+            background: #0071e3;
+            transform: scale(0.95);
+        }
+
+        /* Ajustes para orientación vertical */
+        @media (orientation: portrait) {
+            #control-ui {
+                padding: 0 5%;
+            }
+            #joystick {
+                width: 180px;
+                height: 180px;
+            }
+            #clickBtn {
+                width: 100px;
+                height: 100px;
+            }
+        }
+    </style>
 </head>
 <body>
     <form class="form-client">
@@ -29,55 +103,46 @@
             y el codigo ? <a class="resend-action-client" href="#">Resend</a>
         </p>
     </form>
-     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>
-    eruda.init();
-  </script>
-<video id="screen" autoplay playsinline muted style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1000; background: black;"></video>
 
-<div id="joystick-container" style="display:none; position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); width: 150px; height: 150px; background: rgba(255,255,255,0.2); border-radius: 50%; z-index: 2000; touch-action: none;">
-    <div id="joystick-base" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border: 2px solid white; border-radius: 50%;"></div>
-    <div id="joystick-stick" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
-</div>
+    <video id="screen" autoplay playsinline muted style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1000; background: black;"></video>
 
-<script type="module">
-  import { startViewer } from './client.js';
-  startViewer();
-</script>
+    <div id="control-ui">
+        <div id="joystick">
+            <div id="stick"></div>
+        </div>
+        <button id="clickBtn">CLICK</button>
+    </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>
+        eruda.init();
+    </script>
 
- <script>
+    <script type="module">
+        import { startViewer } from './client.js';
+        startViewer();
+    </script>
+
+    <script>
         const inputs = document.querySelectorAll('.inputs-client input');
         
         inputs.forEach((input, index) => {
-            // Auto-avanzar al siguiente input al escribir
             input.addEventListener('input', (e) => {
                 let value = e.target.value;
-                
-                // Convertir a mayúsculas y permitir solo letras y números
                 value = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                
-                // Limitar a un solo carácter
-                if (value.length > 1) {
-                    value = value.slice(0, 1);
-                }
-                
+                if (value.length > 1) value = value.slice(0, 1);
                 e.target.value = value;
-                
-                // Avanzar al siguiente input si hay un valor
                 if (value.length === 1 && index < inputs.length - 1) {
                     inputs[index + 1].focus();
                 }
             });
             
-            // Retroceder al input anterior con Backspace
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && !e.target.value && index > 0) {
                     inputs[index - 1].focus();
                 }
             });
             
-            // Manejar pegado de código completo
             input.addEventListener('paste', (e) => {
                 e.preventDefault();
                 const pastedData = e.clipboardData.getData('text')
@@ -89,19 +154,15 @@
                         inputs[index + i].value = char;
                     }
                 });
-                
-                // Enfocar el último input rellenado o el último disponible
                 const lastFilledIndex = Math.min(index + pastedData.length, inputs.length - 1);
                 inputs[lastFilledIndex].focus();
             });
             
-            // Seleccionar contenido al hacer focus
             input.addEventListener('focus', (e) => {
                 e.target.select();
             });
         });
         
-        // Enfoque automático en el primer input al cargar
         window.addEventListener('load', () => {
             setTimeout(() => {
                 inputs[0].focus();
