@@ -176,33 +176,45 @@ pc = new RTCPeerConnection({
 let joystickInterval = null;
 let currentDX = 0;
 let currentDY = 0;
-const SENSITIVITY = 10;
+const SENSITIVITY = 15; // Aumentado para mejor respuesta
 
 function handleControlEvent(event) {
+  console.log("Procesando evento de control:", event.type);
+  
   if (event.type === "mouseMove") {
-    console.log("Mouse move:", event.x, event.y);
-  } else if (event.type === "click") {
-    console.log("Click:", event.button);
-  } else if (event.type === "joystickMove") {
+    // Para el movimiento directo del touchpad
+    console.log(`[OS] Moviendo ratón a: ${event.x}, ${event.y}`);
+    // window.postMessage({ type: 'OS_MOUSE_MOVE', x: event.x, y: event.y }, '*');
+  } 
+  else if (event.type === "click") {
+    console.log("[OS] Ejecutando CLICK izquierdo");
+    // Simulación de click en el sistema
+    // window.postMessage({ type: 'OS_MOUSE_CLICK', button: 'left' }, '*');
+  } 
+  else if (event.type === "joystickMove") {
     currentDX = event.dx;
     currentDY = event.dy;
     
     if (currentDX !== 0 || currentDY !== 0) {
       if (!joystickInterval) {
         joystickInterval = setInterval(() => {
-          // Aquí es donde se movería el cursor realmente si estuviéramos en un entorno con acceso al OS
-          // Por ahora simulamos el movimiento en el log
-          console.log(`Moviendo cursor: dx=${currentDX * SENSITIVITY}, dy=${currentDY * SENSITIVITY}`);
+          const moveX = Math.round(currentDX * SENSITIVITY);
+          const moveY = Math.round(currentDY * SENSITIVITY);
           
-          // En una implementación real con Node.js desktop usaríamos robotjs o similar:
-          // const pos = robot.getMousePos();
-          // robot.moveMouse(pos.x + currentDX * SENSITIVITY, pos.y + currentDY * SENSITIVITY);
-        }, 16); // ~60fps
+          console.log(`[OS] Moviendo cursor relativo: dx=${moveX}, dy=${moveY}`);
+          
+          // En una app de escritorio real (Electron/Node), aquí llamaríamos a robotjs:
+          // robot.moveMouseRelative(moveX, moveY);
+          
+          // Para esta demo web, podríamos emitir un evento que una extensión o app local escuche
+          window.postMessage({ type: 'OS_MOUSE_MOVE_RELATIVE', dx: moveX, dy: moveY }, '*');
+        }, 16); // ~60fps para suavidad
       }
     } else {
       if (joystickInterval) {
         clearInterval(joystickInterval);
         joystickInterval = null;
+        console.log("[OS] Movimiento detenido");
       }
     }
   }
