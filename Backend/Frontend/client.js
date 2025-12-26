@@ -75,15 +75,15 @@ async function checkSessionState() {
 function onSessionActive(data) {
   stopPolling();
   
-  // Ocultar el formulario
+  // Ocultar el formulario y mostrar UI de control
   document.querySelector('.form-client').style.display = 'none';
+  const controlUI = document.getElementById("control-ui");
+  if (controlUI) controlUI.style.display = 'flex';
   
   ws = new WebSocket(WS_BASE);
 
   ws.onopen = () => {
     console.log("📱 WS Mobile conectado");
-    console.log("SessionId:", sessionId);
-    console.log("PairingCode:", pairingCode);
     ws.send(JSON.stringify({
       type: "HELLO",
       role: "mobile",
@@ -91,112 +91,148 @@ function onSessionActive(data) {
       pairingCode
     }));
     createPeerConnection();
+    initJoystick();
   };
 
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      console.log("📩 Mensaje recibido:", msg.type);
-
-      if (msg.type === "signal") {
-        const signalType = msg.signal.type || (msg.signal.candidate ? "candidate" : "unknown");
-        console.log("🔄 Signal type:", signalType);
-        
-        if (signalType === "offer") {
-          console.log("📥 Recibiendo offer, creando answer");
-          pcConnection.setRemoteDescription(new RTCSessionDescription(msg.signal)).then(() => {
-            return pcConnection.createAnswer();
-          }).then(answer => {
-            return pcConnection.setLocalDescription(answer);
-          }).then(() => {
-            console.log("📤 Enviando answer a PC");
-            ws.send(JSON.stringify({ type: "signal", signal: pcConnection.localDescription }));
-          }).catch(err => {
-            console.error("❌ Error en answer:", err);
-          });
-        } else if (signalType === "candidate") {
-          console.log("📥 Recibiendo candidate");
-          pcConnection.addIceCandidate(new RTCIceCandidate(msg.signal)).catch(console.error);
-        } else if (signalType === "answer") {
-          console.log("📥 Recibiendo answer (no debería pasar en mobile)");
-          pcConnection.setRemoteDescription(new RTCSessionDescription(msg.signal));
-        }
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === "signal") {
+      const signalType = msg.signal.type || (msg.signal.candidate ? "candidate" : "unknown");
+      if (signalType === "offer") {
+        pcConnection.setRemoteDescription(new RTCSessionDescription(msg.signal)).then(() => {
+          return pcConnection.createAnswer();
+        }).then(answer => {
+          return pcConnection.setLocalDescription(answer);
+        }).then(() => {
+          ws.send(JSON.stringify({ type: "signal", signal: pcConnection.localDescription }));
+        }).catch(err => console.error("❌ Error en answer:", err));
+      } else if (signalType === "candidate") {
+        pcConnection.addIceCandidate(new RTCIceCandidate(msg.signal)).catch(console.error);
       }
-    };
+    }
+  };
 }
 
 function createPeerConnection() {
-pcConnection = new RTCPeerConnection({
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' }
-  ]
-});
-pcConnection.ontrack = (event) => {
-  console.log("🎥 Track recibido!", event);
-  const videoEl = document.getElementById("screen");
-  if (!videoEl.srcObject) {
-    videoEl.srcObject = event.streams[0];
-    videoEl.style.display = 'block';
-    console.log("✅ Video asignado");
-    
-    // Esperar a que haya datos antes de reproducir
-    videoEl.onloadedmetadata = () => {
-      console.log("📊 Metadata cargada");
-      videoEl.play().then(() => {
-        console.log("▶️ Video reproduciéndose");
-      }).catch(err => {
-        console.error("❌ Error reproduciendo video:", err);
-        // Intento de reproducción manual si falla el autoplay
-        const playBtn = document.createElement('button');
-        playBtn.innerText = "Ver Pantalla";
-        playBtn.style = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:2000; padding:20px; background:#007bff; color:white; border:none; border-radius:10px;";
-        playBtn.onclick = () => {
-          videoEl.play();
-          playBtn.remove();
-        };
-        document.body.appendChild(playBtn);
-      });
-    };
-  }
-};
+  pcConnection = new RTCPeerConnection({
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+  });
 
-  pcConnection.onicecandidate = (event) => {
-    if (event.candidate && ws && ws.readyState === ws.OPEN) {
-      console.log("📤 Enviando candidate");
-      ws.send(JSON.stringify({ type: "signal", signal: event.candidate }));
+  pcConnection.ontrack = (event) => {
+    const videoEl = document.getElementById("screen");
+    if (!videoEl.srcObject) {
+      videoEl.srcObject = event.streams[0];
+      videoEl.style.display = 'block';
+      videoEl.onloadedmetadata = () => videoEl.play().catch(console.error);
     }
   };
 
-  pcConnection.onconnectionstatechange = () => {
-    console.log("🌐 WebRTC Connection State:", pcConnection.connectionState);
-  };
-
-  pcConnection.oniceconnectionstatechange = () => {
-    console.log("🧊 ICE Connection State:", pcConnection.iceConnectionState);
+  pcConnection.onicecandidate = (event) => {
+    if (event.candidate && ws && ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ type: "signal", signal: event.candidate }));
+    }
   };
 }
 
-// ────────────── Control remoto ──────────────
-function sendControlEvent(event) {
-  if (ws && ws.readyState === ws.OPEN) {
-    ws.send(JSON.stringify({ type: "control", event }));
+// ────────────── Control Remoto (Joystick + Botón) ──────────────
+function initJoystick() {
+  const joystick = document.getElementById("joystick");
+  const stick = document.getElementById("stick");
+  const clickBtn = document.getElementById("clickBtn");
+
+  if (!joystick || !stick) return;
+
+  let dragging = false;
+  let center = { x: 0, y: 0 };
+  const maxDistance = 60;
+
+  function handleStart(e) {
+    const rect = joystick.getBoundingClientRect();
+    center.x = rect.left + rect.width / 2;
+    center.y = rect.top + rect.height / 2;
+    dragging = true;
+    handleMove(e);
+  }
+
+  function handleMove(e) {
+    if (!dragging || !ws || ws.readyState !== ws.OPEN) return;
+    e.preventDefault();
+
+    const touch = e.touches ? e.touches[0] : e;
+    let dx = touch.clientX - center.x;
+    let dy = touch.clientY - center.y;
+
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxDistance) {
+      dx = (dx / dist) * maxDistance;
+      dy = (dy / dist) * maxDistance;
+    }
+
+    stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+    // Enviar dx/dy normalizados para el movimiento continuo en la PC
+    ws.send(JSON.stringify({
+      type: "control",
+      event: {
+        type: "joystickMove",
+        dx: dx / maxDistance,
+        dy: dy / maxDistance
+      }
+    }));
+  }
+
+  function handleEnd() {
+    dragging = false;
+    stick.style.transform = "translate(-50%, -50%)";
+    if (ws && ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({
+        type: "control",
+        event: { type: "joystickMove", dx: 0, dy: 0 }
+      }));
+    }
+  }
+
+  joystick.addEventListener("touchstart", handleStart);
+  window.addEventListener("touchmove", handleMove, { passive: false });
+  window.addEventListener("touchend", handleEnd);
+
+  // Soporte para mouse (testing)
+  joystick.addEventListener("mousedown", handleStart);
+  window.addEventListener("mousemove", handleMove);
+  window.addEventListener("mouseup", handleEnd);
+
+  // Botón de Click
+  if (clickBtn) {
+    clickBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      if (ws && ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({
+          type: "control",
+          event: { type: "click", button: 0 }
+        }));
+      }
+    });
+    // Soporte mouse
+    clickBtn.addEventListener("mousedown", () => {
+      if (ws && ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({
+          type: "control",
+          event: { type: "click", button: 0 }
+        }));
+      }
+    });
   }
 }
 
 // ────────────── Init ──────────────
 export function startViewer() {
   const verifyBtn = document.querySelector(".validate-client");
-  verifyBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    const code = getCodeFromInputs();
-    if (code.length !== 6) return showError("Código incompleto");
-    activateSession(code);
-  });
-
-  const touchArea = document.querySelector(".inputs-client");
-  touchArea.addEventListener("mousemove", e => {
-    sendControlEvent({ type: "mouseMove", x: e.offsetX, y: e.offsetY });
-  });
-  touchArea.addEventListener("click", e => {
-    sendControlEvent({ type: "click", button: 0 });
-  });
+  if (verifyBtn) {
+    verifyBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const code = getCodeFromInputs();
+      if (code.length !== 6) return showError("Código incompleto");
+      activateSession(code);
+    });
+  }
 }
