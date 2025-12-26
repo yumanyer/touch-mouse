@@ -43,4 +43,5 @@ server.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Servidor iniciado!`);
   console.log(`💻 Local: http://localhost:${port}`);
   console.log(`📱 Móvil: http://${localIP}:${port}/client`);
+
 });
