@@ -65,7 +65,10 @@ async function checkSessionState() {
       currentState = state;
     }
 
-    if (state === "ACTIVE") onSessionActive(json.data);
+    if (state === "ACTIVE") {
+      onSessionActive(json.data);
+      initJoystick();
+    }
   } catch (err) {
     console.error(err);
   }
@@ -173,8 +176,6 @@ pcConnection.ontrack = (event) => {
   pcConnection.oniceconnectionstatechange = () => {
     console.log("🧊 ICE Connection State:", pcConnection.iceConnectionState);
   };
-}
-
 // ────────────── Control remoto ──────────────
 function sendControlEvent(event) {
   if (ws && ws.readyState === ws.OPEN) {
@@ -182,7 +183,65 @@ function sendControlEvent(event) {
   }
 }
 
-// ────────────── Init ──────────────
+function initJoystick() {
+  const container = document.getElementById('joystick-container');
+  const stick = document.getElementById('joystick-stick');
+  const base = document.getElementById('joystick-base');
+  
+  if (!container || !stick) return;
+  
+  container.style.display = 'block';
+  
+  let dragging = false;
+  let startX, startY;
+  const maxDistance = 50;
+
+  function handleStart(e) {
+    dragging = true;
+    const touch = e.touches ? e.touches[0] : e;
+    startX = touch.clientX;
+    startY = touch.clientY;
+  }
+
+  function handleMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    
+    const touch = e.touches ? e.touches[0] : e;
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+    
+    const limitedDistance = Math.min(distance, maxDistance);
+    const moveX = Math.cos(angle) * limitedDistance;
+    const moveY = Math.sin(angle) * limitedDistance;
+    
+    stick.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+    
+    // Normalizar dx/dy entre -1 y 1
+    const normX = moveX / maxDistance;
+    const normY = moveY / maxDistance;
+    
+    sendControlEvent({ type: "joystickMove", dx: normX, dy: normY });
+  }
+
+  function handleEnd() {
+    dragging = false;
+    stick.style.transform = `translate(-50%, -50%)`;
+    sendControlEvent({ type: "joystickMove", dx: 0, dy: 0 });
+  }
+
+  container.addEventListener('touchstart', handleStart);
+  window.addEventListener('touchmove', handleMove, { passive: false });
+  window.addEventListener('touchend', handleEnd);
+  
+  // Soporte para mouse (testing)
+  container.addEventListener('mousedown', handleStart);
+  window.addEventListener('mousemove', handleMove);
+  window.addEventListener('mouseup', handleEnd);
+}── Init ──────────────
 export function startViewer() {
   const verifyBtn = document.querySelector(".validate-client");
   verifyBtn.addEventListener("click", (e) => {
