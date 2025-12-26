@@ -93,34 +93,35 @@ function onSessionActive(data) {
     createPeerConnection();
   };
 
-  ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    console.log("📩 Mensaje recibido:", msg.type);
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      console.log("📩 Mensaje recibido:", msg.type);
 
-    if (msg.type === "signal") {
-      console.log("🔄 Signal type:", msg.signal.type);
-      
-      if (msg.signal.type === "offer") {
-        console.log("📥 Recibiendo offer, creando answer");
-        pcConnection.setRemoteDescription(msg.signal).then(() => {
-          return pcConnection.createAnswer();
-        }).then(answer => {
-          return pcConnection.setLocalDescription(answer);
-        }).then(() => {
-          console.log("📤 Enviando answer a PC");
-          ws.send(JSON.stringify({ type: "signal", signal: pcConnection.localDescription }));
-        }).catch(err => {
-          console.error("❌ Error en answer:", err);
-        });
-      } else if (msg.signal.type === "candidate") {
-        console.log("📥 Recibiendo candidate");
-        pcConnection.addIceCandidate(msg.signal).catch(console.error);
-      } else if (msg.signal.type === "answer") {
-        console.log("📥 Recibiendo answer (no debería pasar en mobile)");
-        pcConnection.setRemoteDescription(msg.signal);
+      if (msg.type === "signal") {
+        const signalType = msg.signal.type || (msg.signal.candidate ? "candidate" : "unknown");
+        console.log("🔄 Signal type:", signalType);
+        
+        if (signalType === "offer") {
+          console.log("📥 Recibiendo offer, creando answer");
+          pcConnection.setRemoteDescription(new RTCSessionDescription(msg.signal)).then(() => {
+            return pcConnection.createAnswer();
+          }).then(answer => {
+            return pcConnection.setLocalDescription(answer);
+          }).then(() => {
+            console.log("📤 Enviando answer a PC");
+            ws.send(JSON.stringify({ type: "signal", signal: pcConnection.localDescription }));
+          }).catch(err => {
+            console.error("❌ Error en answer:", err);
+          });
+        } else if (signalType === "candidate") {
+          console.log("📥 Recibiendo candidate");
+          pcConnection.addIceCandidate(new RTCIceCandidate(msg.signal)).catch(console.error);
+        } else if (signalType === "answer") {
+          console.log("📥 Recibiendo answer (no debería pasar en mobile)");
+          pcConnection.setRemoteDescription(new RTCSessionDescription(msg.signal));
+        }
       }
-    }
-  };
+    };
 }
 
 function createPeerConnection() {
@@ -163,6 +164,14 @@ pcConnection.ontrack = (event) => {
       console.log("📤 Enviando candidate");
       ws.send(JSON.stringify({ type: "signal", signal: event.candidate }));
     }
+  };
+
+  pcConnection.onconnectionstatechange = () => {
+    console.log("🌐 WebRTC Connection State:", pcConnection.connectionState);
+  };
+
+  pcConnection.oniceconnectionstatechange = () => {
+    console.log("🧊 ICE Connection State:", pcConnection.iceConnectionState);
   };
 }
 
