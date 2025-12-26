@@ -1,0 +1,166 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #000000 0%, #1c1c1e 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #ffffff;
+    display: flex;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+}
+
+.form-client {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding: 40px 30px;
+    background: rgba(28, 28, 30, 0.85);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    max-width: 420px;
+    width: 90%;
+}
+
+.info-client {
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.title-client {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+}
+
+.description-client {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.inputs-client {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.inputs-client input {
+    height: 56px;
+    width: 48px;
+    outline: none;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 500;
+    color: #ffffff;
+    border-radius: 12px;
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(58, 58, 60, 0.4);
+    transition: all 0.2s ease;
+}
+
+.inputs-client input:focus {
+    border-color: #0a84ff;
+    background: rgba(58, 58, 60, 0.6);
+    transform: scale(1.05);
+}
+
+.inputs-client input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.validate-client {
+    width: 100%;
+    text-decoration: none;
+    color: #ffffff;
+    background: #0a84ff;
+    padding: 14px 24px;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 12px;
+    text-align: center;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.validate-client:hover {
+    background: #0077ed;
+    transform: scale(1.02);
+}
+
+.validate-client:active {
+    transform: scale(0.98);
+}
+
+.resend-client {
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 20px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.resend-action-client {
+    text-decoration: none;
+    cursor: pointer;
+    margin-left: 4px;
+    color: #0a84ff;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.resend-action-client:hover {
+    color: #0077ed;
+    text-decoration: underline;
+}
+
+.close-client {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    background: rgba(58, 58, 60, 0.6);
+    color: rgba(255, 255, 255, 0.7);
+    height: 32px;
+    width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 18px;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.close-client:hover {
+    background: rgba(58, 58, 60, 0.8);
+    transform: scale(1.1);
+}
+
+.close-client:active {
+    transform: scale(0.95);
+}
+       @media (max-width: 480px) {
+            .inputs-client {
+                gap: 4px;
+            }
+
+            .inputs-client input {
+                width: 38px;
+                height: 48px;
+                font-size: 18px;
+            }
+        }

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TOUCH MOUSE - Host</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="host-container">
+        <p class="instruction">Ingresá este código en tu celular</p>
+        
+        <div class="code-display">
+            <div class="code-group">
+                <div class="code-digit"></div>
+                <div class="code-digit"></div>
+                <div class="code-digit"></div>
+            </div>
+            <span class="code-separator">-</span>
+            <div class="code-group">
+                <div class="code-digit"></div>
+                <div class="code-digit"></div>
+                <div class="code-digit"></div>
+            </div>
+        </div>
+
+        <div class="status waiting">
+            <span class="status-dot"></span>
+            <span>Esperando conexión...</span>
+        </div>
+
+        <div class="actions">
+
+            <button class="btn btn-primary" onclick="generateNewCode()">
+                Nuevo código
+            </button>
+            <button class="btn btn-secondary" onclick="cancelSession()">
+                Cancelar
+            </button>
+        </div>
+    </div>
+
+<script src="pc.js"></script>
+</body>
+</html>

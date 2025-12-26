@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TOUCH MOUSE</title>
+    <meta name="description" content="form para ingresar el codigo desde el celular" />
+    <link rel="stylesheet" href="client.css">
+</head>
+<body>
+    <form class="form-client">
+        <span class="close-client">×</span>
+        <div class="info-client">
+            <span class="title-client">Enter Code</span>
+            <p class="description-client">
+                Please enter the 6-digit code we sent to your device.
+            </p>
+        </div>
+        <div class="inputs-client">
+            <input placeholder="" type="text" maxlength="1" inputmode="text" autocomplete="off" />
+            <input placeholder="" type="text" maxlength="1" inputmode="text" autocomplete="off" />
+            <input placeholder="" type="text" maxlength="1" inputmode="text" autocomplete="off" />
+            <input placeholder="" type="text" maxlength="1" inputmode="text" autocomplete="off" />
+            <input placeholder="" type="text" maxlength="1" inputmode="text" autocomplete="off" />
+            <input placeholder="" type="text" maxlength="1" inputmode="text" autocomplete="off" />
+        </div>
+        <a class="validate-client" href="#">Verify</a>
+        <p class="resend-client">
+            y el codigo ? <a class="resend-action-client" href="#">Resend</a>
+        </p>
+    </form>
+     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>
+    eruda.init();
+  </script>
+<video id="screen" autoplay playsinline style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1000;"></video>
+
+<script type="module">
+  import { startViewer } from './client.js';
+  startViewer();
+</script>
+
+
+ <script>
+        const inputs = document.querySelectorAll('.inputs-client input');
+        
+        inputs.forEach((input, index) => {
+            // Auto-avanzar al siguiente input al escribir
+            input.addEventListener('input', (e) => {
+                let value = e.target.value;
+                
+                // Convertir a mayúsculas y permitir solo letras y números
+                value = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                
+                // Limitar a un solo carácter
+                if (value.length > 1) {
+                    value = value.slice(0, 1);
+                }
+                
+                e.target.value = value;
+                
+                // Avanzar al siguiente input si hay un valor
+                if (value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+            
+            // Retroceder al input anterior con Backspace
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+            
+            // Manejar pegado de código completo
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text')
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, '');
+                
+                pastedData.split('').forEach((char, i) => {
+                    if (index + i < inputs.length) {
+                        inputs[index + i].value = char;
+                    }
+                });
+                
+                // Enfocar el último input rellenado o el último disponible
+                const lastFilledIndex = Math.min(index + pastedData.length, inputs.length - 1);
+                inputs[lastFilledIndex].focus();
+            });
+            
+            // Seleccionar contenido al hacer focus
+            input.addEventListener('focus', (e) => {
+                e.target.select();
+            });
+        });
+        
+        // Enfoque automático en el primer input al cargar
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                inputs[0].focus();
+            }, 100);
+        });
+    </script>
+</body>
+</html>
