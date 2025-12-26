@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:3000/session";
+const API_BASE = `${window.location.origin}/session`;
 const codeElements = document.getElementsByClassName("code-digit");
 
 let pollingInterval = null;
@@ -81,7 +81,8 @@ function handleStateTransition(from, to, data) {
 
 // ────────────── WS + WebRTC ──────────────
 function setupWebSocket() {
-  ws = new WebSocket(`ws://${location.hostname}:3000`);
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${protocol}//${window.location.host}`);
 
   ws.onopen = () => {
     console.log("🧠 WS PC conectado");

@@ -1,5 +1,6 @@
-const API_BASE = "http://192.168.0.10:3000/session";
-const WS_BASE = "ws://192.168.0.10:3000";
+const API_BASE = `${window.location.origin}/session`;
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_BASE = `${protocol}//${window.location.host}`;
 
 let pollingInterval = null;
 let currentState = null;
@@ -143,6 +144,15 @@ pcConnection.ontrack = (event) => {
         console.log("▶️ Video reproduciéndose");
       }).catch(err => {
         console.error("❌ Error reproduciendo video:", err);
+        // Intento de reproducción manual si falla el autoplay
+        const playBtn = document.createElement('button');
+        playBtn.innerText = "Ver Pantalla";
+        playBtn.style = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:2000; padding:20px; background:#007bff; color:white; border:none; border-radius:10px;";
+        playBtn.onclick = () => {
+          videoEl.play();
+          playBtn.remove();
+        };
+        document.body.appendChild(playBtn);
       });
     };
   }
