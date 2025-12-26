@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:3000/session";
+const API_BASE = `${window.location.origin}/session`;
 const codeElements = document.getElementsByClassName("code-digit");
 
 let pollingInterval = null;
@@ -81,7 +81,8 @@ function handleStateTransition(from, to, data) {
 
 // ────────────── WS + WebRTC ──────────────
 function setupWebSocket() {
-  ws = new WebSocket(`ws://${location.hostname}:3000`);
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${protocol}//${window.location.host}`);
 
   ws.onopen = () => {
     console.log("🧠 WS PC conectado");
@@ -102,14 +103,15 @@ function setupWebSocket() {
 
     // WebRTC signaling
     if (msg.type === "signal") {
-      console.log("🔄 Signal type:", msg.signal.type);
+      const signalType = msg.signal.type || (msg.signal.candidate ? "candidate" : "unknown");
+      console.log("🔄 Signal type:", signalType);
       
-      if (msg.signal.type === "answer") {
+      if (signalType === "answer") {
         console.log("📥 Recibiendo answer del móvil");
-        pc.setRemoteDescription(msg.signal);
-      } else if (msg.signal.type === "candidate") {
+        pc.setRemoteDescription(new RTCSessionDescription(msg.signal));
+      } else if (signalType === "candidate") {
         console.log("📥 Recibiendo candidate");
-        pc.addIceCandidate(msg.signal).catch(console.error);
+        pc.addIceCandidate(new RTCIceCandidate(msg.signal)).catch(console.error);
       }
     }
 
@@ -160,8 +162,17 @@ pc = new RTCPeerConnection({
   pc.onicecandidate = (event) => {
     if (event.candidate) {
       console.log("📤 Enviando candidate");
+      // Asegurarse de que el candidato tenga la estructura correcta
       ws.send(JSON.stringify({ type: "signal", signal: event.candidate }));
     }
+  };
+  
+  pc.onconnectionstatechange = () => {
+    console.log("🌐 WebRTC Connection State:", pc.connectionState);
+  };
+  
+  pc.oniceconnectionstatechange = () => {
+    console.log("🧊 ICE Connection State:", pc.iceConnectionState);
   };
 }
 
