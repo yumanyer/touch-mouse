@@ -33,12 +33,16 @@
 
     <video id="screen" autoplay playsinline muted style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1000; background: black;"></video>
 
-    <div id="control-ui">
-        <div id="joystick">
-            <div id="stick"></div>
-        </div>
-        <button id="clickBtn">CLICK</button>
-    </div>
+<div id="control-ui">
+  <div id="joystick">
+    <div id="stick"></div>
+  </div>
+
+  <div id="pointer"></div>
+
+  <button id="clickBtn">CLICK</button>
+</div>
+    
 
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>
@@ -49,6 +53,7 @@
         import { startViewer } from './client.js';
         startViewer();
     </script>
+    <script src="script.js"></script>
 
     <script>
         const inputs = document.querySelectorAll('.inputs-client input');
