@@ -8,7 +8,7 @@ let ws = null;
 let pcConnection = null;
 let sessionId = null;
 let pairingCode = null;
-
+ 
 // ────────────── Helpers ──────────────
 function getCodeFromInputs() {
   const inputs = document.querySelectorAll(".inputs-client input");

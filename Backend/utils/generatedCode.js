@@ -5,4 +5,4 @@ export function generateCode(){
         code += dictionary.charAt(Math.floor(Math.random() * dictionary.length));
     }
     return code;
-}
+} 

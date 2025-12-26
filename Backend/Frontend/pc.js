@@ -175,7 +175,7 @@ pc = new RTCPeerConnection({
     console.log("🧊 ICE Connection State:", pc.iceConnectionState);
   };
 }
-
+ 
 // ────────────── Control remoto ──────────────
 function handleControlEvent(event) {
   if (event.type === "mouseMove") {

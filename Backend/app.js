@@ -18,7 +18,7 @@ app.use(express.static(publicPath));
 app.use(express.json());
 
 
-
+ 
 const port = 3000;
 
 app.get("/",(req,res)=>{res.sendFile(path.join(publicPath,"index.html"))})

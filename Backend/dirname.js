@@ -6,4 +6,4 @@ const getDirname = () => {
   return path.dirname(__filename);
 };
 
-export default getDirname;
+export default getDirname; 

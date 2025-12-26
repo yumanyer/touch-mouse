@@ -50,7 +50,7 @@ function startSession(req, res) {
     }
   });
 }
-
+ 
 /**
  * POST /session/activate
  * Activa la sesión usando el código

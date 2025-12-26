@@ -16,7 +16,7 @@ export default function startSocketServer(server) {
         console.warn('❌ Mensaje inválido');
         return;
       }
-
+  
       // -----------------------------------
       // HELLO: Identificar cliente y sesión
       // -----------------------------------
