@@ -1,23 +1,24 @@
-/* ================================
-   JOYSTICK + POINTER (MOBILE SAFE)
-   ================================ */
+/* =========================================
+   JOYSTICK + POINTER (CONTINUOUS MOVEMENT)
+   ========================================= */
 
 const joystick = document.getElementById('joystick');
 const stick = document.getElementById('stick');
 const pointer = document.getElementById('pointer');
 const clickBtn = document.getElementById('clickBtn');
 
-/* ---------- Screen center ---------- */
-let screenCenterX = window.innerWidth / 2;
-let screenCenterY = window.innerHeight / 2;
+/* ---------- Screen ---------- */
+let screenW = window.innerWidth;
+let screenH = window.innerHeight;
 
-function updateScreenCenter() {
-  screenCenterX = window.innerWidth / 2;
-  screenCenterY = window.innerHeight / 2;
-}
+window.addEventListener('resize', () => {
+  screenW = window.innerWidth;
+  screenH = window.innerHeight;
+});
 
-window.addEventListener('resize', updateScreenCenter);
-updateScreenCenter();
+/* ---------- Pointer state ---------- */
+let pointerX = screenW / 2;
+let pointerY = screenH / 2;
 
 /* ---------- Joystick geometry ---------- */
 let centerX = 0;
@@ -34,16 +35,19 @@ function updateJoystickDimensions() {
 window.addEventListener('resize', updateJoystickDimensions);
 updateJoystickDimensions();
 
-/* ---------- State ---------- */
+/* ---------- Input state ---------- */
 let activeTouchId = null;
-let currentAngle = 0;
-let currentForce = 0;
+let inputX = 0;
+let inputY = 0;
 
-/* ---------- Pointer helpers ---------- */
-function centerPointer() {
-  pointer.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
-  pointer.style.opacity = '0.85';
-  pointer.style.transform = `translate(${screenCenterX}px, ${screenCenterY}px)`;
+/* ---------- RESET ---------- */
+function resetJoystick() {
+  activeTouchId = null;
+  inputX = 0;
+  inputY = 0;
+
+  stick.style.transition = 'transform 0.15s ease-out';
+  stick.style.transform = 'translate(-50%, -50%)';
 }
 
 /* ---------- Core movement ---------- */
@@ -53,56 +57,50 @@ function moveStick(clientX, clientY) {
   let x = clientX - rect.left - centerX;
   let y = clientY - rect.top - centerY;
 
-  const distance = Math.sqrt(x * x + y * y);
-  currentForce = Math.min(distance / radius, 1);
+  const distance = Math.hypot(x, y);
+  const clamped = Math.min(distance, radius);
+  const angle = Math.atan2(y, x);
 
-  if (distance > radius) {
-    x *= radius / distance;
-    y *= radius / distance;
-  }
+  const dx = Math.cos(angle) * clamped;
+  const dy = Math.sin(angle) * clamped;
 
-  /* mover stick visual */
-  stick.style.transform = `translate(${x}px, ${y}px)`;
+  /* input normalizado (-1 a 1) */
+  inputX = dx / radius;
+  inputY = dy / radius;
 
-  /* ángulo corregido (arriba = arriba) */
-  currentAngle = Math.atan2(y, x);
-
-  /* mover puntero */
-  if (currentForce > 0.15) {
-    pointer.style.opacity = '0.9';
-
-    const pointerDistance = 80;
-    const px = Math.cos(currentAngle) * pointerDistance;
-    const py = Math.sin(currentAngle) * pointerDistance;
-
-    pointer.style.transform = `translate(
-      ${screenCenterX + px}px,
-      ${screenCenterY + py}px
-    )`;
-  } else {
-    pointer.style.opacity = '0';
-  }
-
-  /* debug (opcional) */
-  console.log({
-    x: (x / radius).toFixed(2),
-    y: (y / radius).toFixed(2),
-    angle: (currentAngle * 180 / Math.PI).toFixed(1),
-    force: currentForce.toFixed(2)
-  });
+  stick.style.transition = 'none';
+  stick.style.transform = `translate(${dx}px, ${dy}px)`;
 }
 
-/* ================================
+/* ---------- Pointer update loop ---------- */
+const SPEED = 14; // sensibilidad base (ajustable)
+
+function updatePointer() {
+  pointerX += inputX * SPEED;
+  pointerY += inputY * SPEED;
+
+  /* límites de pantalla */
+  pointerX = Math.max(0, Math.min(screenW, pointerX));
+  pointerY = Math.max(0, Math.min(screenH, pointerY));
+
+  pointer.style.transform = `translate(${pointerX}px, ${pointerY}px)`;
+
+  requestAnimationFrame(updatePointer);
+}
+
+updatePointer();
+
+/* =========================================
    TOUCH EVENTS (MOBILE)
-   ================================ */
+   ========================================= */
 
 joystick.addEventListener('touchstart', e => {
   e.preventDefault();
-  if (activeTouchId === null && e.touches.length > 0) {
-    const t = e.touches[0];
-    activeTouchId = t.identifier;
-    moveStick(t.clientX, t.clientY);
-  }
+  if (activeTouchId !== null) return;
+
+  const t = e.changedTouches[0];
+  activeTouchId = t.identifier;
+  moveStick(t.clientX, t.clientY);
 }, { passive: false });
 
 joystick.addEventListener('touchmove', e => {
@@ -115,21 +113,12 @@ joystick.addEventListener('touchmove', e => {
   }
 }, { passive: false });
 
-joystick.addEventListener('touchend', e => {
-  e.preventDefault();
-  for (const t of e.changedTouches) {
-    if (t.identifier === activeTouchId) {
-      activeTouchId = null;
-      stick.style.transform = 'translate(-50%, -50%)';
-      centerPointer();
-      break;
-    }
-  }
-}, { passive: false });
+joystick.addEventListener('touchend', resetJoystick, { passive: false });
+joystick.addEventListener('touchcancel', resetJoystick, { passive: false });
 
-/* ================================
+/* =========================================
    MOUSE EVENTS (PC TESTING)
-   ================================ */
+   ========================================= */
 
 joystick.addEventListener('mousedown', e => {
   if (e.button !== 0) return;
@@ -138,8 +127,7 @@ joystick.addEventListener('mousedown', e => {
 
   const onMove = ev => moveStick(ev.clientX, ev.clientY);
   const onUp = () => {
-    stick.style.transform = 'translate(-50%, -50%)';
-    centerPointer();
+    resetJoystick();
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
   };
@@ -148,13 +136,13 @@ joystick.addEventListener('mousedown', e => {
   document.addEventListener('mouseup', onUp);
 });
 
-/* ================================
+/* =========================================
    CLICK BUTTON (TEST)
-   ================================ */
+   ========================================= */
 
 clickBtn.addEventListener('click', () => {
-  alert('CLICK virtual');
+  console.log('CLICK virtual');
 });
 
 /* ---------- init ---------- */
-centerPointer();
+pointer.style.transform = `translate(${pointerX}px, ${pointerY}px)`;

@@ -222,20 +222,20 @@ body {
         0 4px 15px rgba(0,0,0,0.5),
         inset 0 2px 8px rgba(255,255,255,0.35);
     border: 2px solid rgba(255,255,255,0.25);
-    transition: transform 0.35s ease-out;
+    transition: transform 0.15s ease-out;
 }
 
 /* ------------------- PUNTERO GLOBAL ------------------- */
 #pointer {
     position: absolute;
-    width: 36px;
-    height: 36px;
-    background: radial-gradient(circle at 35% 35%, white, #00eaff 45%, transparent 70%);
-    border: 3px solid #00eaff;
+    width: 16px;
+    height: 16px;
+    background:transparent;
+    border: 1px solid red;
     border-radius: 50%;
     box-shadow: 
-        0 0 20px #00eaff,
-        0 0 40px #00eaff66;
+        0 0 20px #ff1e00,
+        0 0 40px #ff260066;
     pointer-events: none;
     transform: translate(-50%, -50%);
     z-index: 9999;
